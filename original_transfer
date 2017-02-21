@@ -1,0 +1,286 @@
+/*************************************************** 
+  This is an example for the Adafruit VS1053 Codec Breakout
+
+  Designed specifically to work with the Adafruit VS1053 Codec Breakout 
+  ----> https://www.adafruit.com/products/1381
+
+  Adafruit invests time and resources providing this open source code, 
+  please support Adafruit and open-source hardware by purchasing 
+  products from Adafruit!
+
+  Written by Limor Fried/Ladyada for Adafruit Industries.  
+  BSD license, all text above must be included in any redistribution
+ ****************************************************/
+// Modified by Richelle Acoba on February 16, 2017
+// Add-ons: piezo sensors and LEDs (to simulate and display a full piano scale)
+// Used with the Adafruit Music Maker Featherwing and an Arduino Mega 2560
+
+#include <SoftwareSerial.h>
+
+#define VS1053_RX 2 // VS1053 RX pin to Arduino's digital pin #2
+#define VS1053_RESET 9 // VS1053 RST pin to Arduino's digital pin #9
+
+#define VS1053_BANK_DEFAULT 0x00
+#define VS1053_BANK_DRUMS1 0x78
+#define VS1053_BANK_DRUMS2 0x7F
+#define VS1053_BANK_MELODY 0x79
+
+#define MIDI_NOTE_ON  0x90
+#define MIDI_NOTE_OFF 0x80
+#define MIDI_CHAN_MSG 0xB0
+#define MIDI_CHAN_BANK 0x00
+#define MIDI_CHAN_VOLUME 0x07
+#define MIDI_CHAN_PROGRAM 0xC0
+
+// Instrument synth noise
+#define VS1053_GM1_ACOUSTIC_GRAND_PIANO 1
+
+SoftwareSerial VS1053_MIDI(0, 2); // TX only
+
+// Piezo elements on analog pins A0 to A12 and threshold on pin A13
+const int piezoC4 = A0;
+const int piezoCS4 = A1;
+const int piezoD4 = A2;
+const int piezoDS4 = A3;
+const int piezoE4 = A4;
+const int piezoF4 = A5;
+const int piezoFS4 = A6;
+const int piezoG4 = A7;
+const int piezoGS4 = A8;
+const int piezoA4 = A9;
+const int piezoAS4 = A10;
+const int piezoB4 = A11;
+const int piezoC5 = A12;
+const int threshold = 100;
+//const int threshold2 = 200;
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("VS1053 MIDI piano test");
+
+  VS1053_MIDI.begin(31250);
+
+  pinMode(VS1053_RESET, OUTPUT);
+  digitalWrite(VS1053_RESET, LOW);
+  delay(10);
+  digitalWrite(VS1053_RESET, HIGH);
+  delay(10);
+
+  midiSetChannelBank(0, VS1053_BANK_MELODY);
+  midiSetInstrument(0, VS1053_GM1_ACOUSTIC_GRAND_PIANO);
+  midiSetChannelVolume(0, 127);
+
+  // LED outputs
+  pinMode(22, OUTPUT);
+  pinMode(23, OUTPUT);
+  pinMode(24, OUTPUT);
+  pinMode(25, OUTPUT);
+  pinMode(26, OUTPUT);
+  pinMode(27, OUTPUT);
+  pinMode(28, OUTPUT);
+  pinMode(29, OUTPUT);
+  pinMode(30, OUTPUT);
+  pinMode(31, OUTPUT);
+  pinMode(32, OUTPUT);
+  pinMode(33, OUTPUT);
+  pinMode(34, OUTPUT);
+}
+
+void loop() {
+  // Readings from the piezo sensors
+  int sensorC4 = analogRead(piezoC4);
+  int sensorCS4 = analogRead(piezoCS4);
+  int sensorD4 = analogRead(piezoD4);
+  int sensorDS4 = analogRead(piezoDS4);
+  int sensorE4 = analogRead(piezoE4);
+  int sensorF4 = analogRead(piezoF4);
+  int sensorFS4 = analogRead(piezoFS4);
+  int sensorG4 = analogRead(piezoG4);
+  int sensorGS4 = analogRead(piezoGS4);
+  int sensorA4 = analogRead(piezoA4);
+  int sensorAS4 = analogRead(piezoAS4);
+  int sensorB4 = analogRead(piezoB4);
+  int sensorC5 = analogRead(piezoC5);
+
+  // If no sensors are touched, then play no noise
+  if (sensorC4 == 0 && sensorCS4 == 0 && sensorD4 == 0 && sensorDS4 == 0 && sensorE4 == 0 && sensorF4 == 0 &&
+      sensorFS4 == 0 && sensorG4 == 0 && sensorGS4 == 0 && sensorA4 == 0 && sensorAS4 == 0 && sensorB4 == 0 && sensorC5 == 0) {
+    midiNoteOff(0, 72, 127);
+    midiNoteOff(0, 73, 127);
+    midiNoteOff(0, 74, 127);
+    midiNoteOff(0, 75, 127);
+    midiNoteOff(0, 76, 127);
+    midiNoteOff(0, 77, 127);
+    midiNoteOff(0, 78, 127);
+    midiNoteOff(0, 79, 127);
+    midiNoteOff(0, 80, 127);
+    midiNoteOff(0, 81, 127);
+    midiNoteOff(0, 82, 127);
+    midiNoteOff(0, 83, 127);
+    midiNoteOff(0, 84, 127);
+  }
+
+  // Individual piezo sensor readings and their outputs
+  if (sensorC4 >= threshold) {
+    Serial.println("C4 (middle C)");
+    midiNoteOn(0, 72, 127);
+    digitalWrite(22, HIGH);
+    delay(100);
+    midiNoteOff(0, 72, 127);
+    digitalWrite(22, LOW);
+  }
+  if (sensorCS4 >= threshold) {
+    Serial.println("C#4");
+    midiNoteOn(0, 73, 127);
+    digitalWrite(23, HIGH);
+    delay(100);
+    midiNoteOff(0, 73, 127);
+    digitalWrite(23, LOW);
+  }
+  if (sensorD4 >= threshold) {
+    Serial.println("D4");
+    midiNoteOn(0, 74, 127);
+    digitalWrite(24, HIGH);
+    delay(100);
+    midiNoteOff(0, 74, 127);
+    digitalWrite(24, LOW);
+  }
+  if (sensorDS4 >= threshold) {
+    Serial.println("D#4");
+    midiNoteOn(0, 75, 127);
+    digitalWrite(25, HIGH);
+    delay(100);
+    midiNoteOff(0, 75, 127);
+    digitalWrite(25, LOW);
+  }
+  if (sensorE4 >= threshold) {
+    Serial.println("E4");
+    midiNoteOn(0, 76, 127);
+    digitalWrite(26, HIGH);
+    delay(100);
+    midiNoteOff(0, 76, 127);
+    digitalWrite(26, LOW);
+  }
+  if (sensorF4 >= threshold) {
+    Serial.println("F4");
+    midiNoteOn(0, 77, 127);
+    digitalWrite(27, HIGH);
+    delay(100);
+    midiNoteOff(0, 77, 127);
+    digitalWrite(27, LOW);
+  }
+  if (sensorFS4 >= threshold) {
+    Serial.println("F#4");
+    midiNoteOn(0, 78, 127);
+    digitalWrite(28, HIGH);
+    delay(100);
+    midiNoteOff(0, 78, 127);
+    digitalWrite(28, LOW);
+  }
+  if (sensorG4 >= threshold) {
+    Serial.println("G4");
+    midiNoteOn(0, 79, 127);
+    digitalWrite(29, HIGH);
+    delay(100);
+    midiNoteOff(0, 79, 127);
+    digitalWrite(29, LOW);
+  }
+  if (sensorGS4 >= threshold) {
+    Serial.println("G#4");
+    midiNoteOn(0, 80, 127);
+    digitalWrite(30, HIGH);
+    delay(100);
+    midiNoteOff(0, 80, 127);
+    digitalWrite(30, LOW);
+  }
+  if (sensorA4 >= threshold) {
+    Serial.println("A4");
+    midiNoteOn(0, 81, 127);
+    digitalWrite(31, HIGH);
+    delay(100);
+    midiNoteOff(0, 81, 127);
+    digitalWrite(31, LOW);
+  }
+  if (sensorAS4 >= threshold) {
+    Serial.println("A#4");
+    midiNoteOn(0, 82, 127);
+    digitalWrite(32, HIGH);
+    delay(100);
+    midiNoteOff(0, 82, 127);
+    digitalWrite(32, LOW);
+  }
+  if (sensorB4 >= threshold) {
+    Serial.println("B4");
+    midiNoteOn(0, 83, 127);
+    digitalWrite(33, HIGH);
+    delay(100);
+    midiNoteOff(0, 83, 127);
+    digitalWrite(33, LOW);
+  }
+  if (sensorC5 >= threshold) {
+    Serial.println("C5 (high C)");
+    midiNoteOn(0, 84, 127);
+    digitalWrite(34, HIGH);
+    delay(100);
+    midiNoteOff(0, 84, 127);
+    digitalWrite(34, LOW);
+  }
+
+  if (sensorC4 >= threshold && sensorE4 >= threshold && sensorG4 >= threshold) {
+    Serial.println("C Major Chord");
+    midiNoteOn(0, 72, 100); digitalWrite(22, HIGH);
+    midiNoteOn(0, 76, 100); digitalWrite(26, HIGH);
+    midiNoteOn(0, 79, 100); digitalWrite(29, HIGH);
+    delay(100);
+    midiNoteOff(0, 72, 100); digitalWrite(22, LOW);
+    midiNoteOff(0, 76, 100); digitalWrite(26, LOW);
+    midiNoteOff(0, 79, 100); digitalWrite(29, LOW);
+  }
+}
+
+void midiSetInstrument(uint8_t chan, uint8_t inst) {
+  if (chan > 15) return;
+  inst --; //
+  if (inst > 127) return;
+
+  VS1053_MIDI.write(MIDI_CHAN_PROGRAM | chan);
+  VS1053_MIDI.write(inst);
+}
+
+void midiSetChannelVolume(uint8_t chan, uint8_t vol) {
+  if (chan > 15) return;
+  if (vol > 127) return;
+
+  VS1053_MIDI.write(MIDI_CHAN_MSG | chan);
+  VS1053_MIDI.write(MIDI_CHAN_VOLUME);
+  VS1053_MIDI.write(vol);
+}
+
+void midiSetChannelBank(uint8_t chan, uint8_t bank) {
+  if (chan > 15) return;
+  if (bank > 127) return;
+
+  VS1053_MIDI.write(MIDI_CHAN_MSG | chan);
+  VS1053_MIDI.write((uint8_t)MIDI_CHAN_BANK);
+  VS1053_MIDI.write(bank);
+}
+
+void midiNoteOn(uint8_t chan, uint8_t n, uint8_t vel) {
+  if (chan > 15) return;
+  if (n > 127) return;
+  if (vel > 127) return;
+
+  VS1053_MIDI.write(MIDI_NOTE_ON | chan);
+  VS1053_MIDI.write(n);
+  VS1053_MIDI.write(vel);
+}
+
+void midiNoteOff(uint8_t chan, uint8_t n, uint8_t vel) {
+  if (chan > 15) return;
+  if (n > 127) return;
+  if (vel > 127) return;
+
+  VS1053_MIDI.write(MIDI_NOTE_OFF | chan);
+  VS1053_MIDI.write(n);
+  VS1053_MIDI.write(vel);
+}
